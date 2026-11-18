@@ -15,7 +15,7 @@ La aplicación permite:
 - Finalizar la carrera y mostrar su importe en euros con dos decimales.
 - Comenzar otra carrera sin cerrar el programa.
 
-La [memoria de la fase 1](entregables/fase1/README.md) recoge el alcance, las decisiones técnicas, la validación y las evidencias de la entrega. La demostración en directo está pendiente de presentación.
+La [memoria de la fase 1](Entregables/Fase1/README.md) recoge el alcance, las decisiones técnicas, la validación y las evidencias de la entrega. La demostración en directo está pendiente de presentación.
 
 ## Requisitos y ejecución
 
@@ -77,12 +77,13 @@ El estado se selecciona mediante comandos. El programa calcula el coste de cada 
 
 **El tiempo en parado también se factura.** Leer las instrucciones, escribir comandos o introducir una orden incorrecta no detiene el contador.
 
-Por ejemplo, una carrera con 10 segundos parado, 20 segundos en movimiento y otros 5 segundos parado cuesta **1.30 €**. En el uso manual, el importe depende del tiempo real entre los comandos.
-
 ## Documentación y seguimiento
 
-- [Memoria y evidencias de la fase 1](entregables/fase1/README.md).
+- [Memoria y evidencias de la fase 1](Entregables/Fase1/README.md).
 - [Tablero de seguimiento](https://github.com/users/gabrielq03/projects/1).
 - [Repositorio en GitHub](https://github.com/gabrielq03/Taximetro-FactoriaF5).
 
-El tablero incluye una vista **Por fases** para organizar el trabajo. El campo **Status** registra el avance de cada tarea.
+El tablero incluye una vista **Por fases** para organizar el trabajo. 
+Donde en view se tiene que especificar "Column By: Fase"
+
+El campo **Status** registra el avance de cada tarea.
