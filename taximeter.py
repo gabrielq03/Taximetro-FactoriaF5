@@ -1,10 +1,13 @@
 import time
 
 import csv
+import json
+
 from datetime import date, datetime
 from pathlib import Path
 
-ARCHIVO_HISTORIAL = Path(__file__).resolve().with_name("historial.csv") # Guardamos el CSV en la misma carpeta que este archivo Python.
+ARCHIVO_HISTORIAL = Path(__file__).resolve().with_name("historial.csv") # Ruta del csv (en la misma carpeta que el .py)
+ARCHIVO_TARIFAS = Path(__file__).resolve().with_name("tarifas.json") # Ruta del .json (no lo crea el programa)
 
 def mostrar_instrucciones():
     """Muestra las opciones del menú principal."""
@@ -19,15 +22,16 @@ def mostrar_instrucciones():
 def mostrar_instrucciones_carrera(tarifas):
     """Muestra el estado inicial, las tarifas y los comandos de la carrera."""
     print("\nCarrera iniciada en estado parado.")
-    print(f"Tarifa actual: {tarifas['parado']:.2f} €/segundo.")
+    print(f"Tarifa actual: {tarifas['parado']:.2f} €/segundo.") # parado es un estado que tiene que existir, siempre se empieza desde él
 
     print("Tarifas disponibles:")
-    print(f"  Parado:     {tarifas['parado']:.2f} €/segundo.")
-    print(f"  Movimiento: {tarifas['movimiento']:.2f} €/segundo.")
+    for estado, tarifa in tarifas.items():
+        print(f"  {estado}: {tarifa:.2f} €/segundo.")
 
     print("Comandos durante la carrera:")
-    print("  parado     -> cambiar a la tarifa de parado")
-    print("  movimiento -> cambiar a la tarifa de movimiento")
+    for estado in tarifas:
+        print(f"  {estado} -> cambiar a la tarifa de {estado}")
+
     print("  finalizar  -> terminar la carrera y mostrar el importe")
     print()
 
@@ -123,7 +127,7 @@ def gestionar_carrera(tarifas):
     while True:
         comando_carrera = input("carrera> ").strip().lower()
 
-        if comando_carrera in ("parado", "movimiento"):
+        if comando_carrera in tarifas:
             if comando_carrera == estado:
                 print(f"El taxi ya está en estado: {estado}.")
             else:
@@ -154,17 +158,31 @@ def gestionar_carrera(tarifas):
             break
 
         else:
-            print("Comando no válido. Usa: parado, movimiento o finalizar.")
+            estados_disponibles = ", ".join(tarifas) # unir claves de tarifas en un solo texto
+            print(f"Comando no válido. Usa: {estados_disponibles} o finalizar.")
 
 
 def main():
-    tarifas = {"parado": 0.02, "movimiento": 0.05}
     mostrar_instrucciones()
 
     while True:
         comando = input("taximetro> ").strip().lower()
 
         if comando == "iniciar":
+
+            try:
+                with ARCHIVO_TARIFAS.open("r", encoding="utf-8") as archivo: # abrir archivo en formato lectura
+                    tarifas = json.load(archivo)
+
+            except FileNotFoundError:
+                print("Tarifas no especificadas. Falta el fichero tarifas.json")
+                break # si no hay tarifas salir del programa
+
+            except ValueError:
+                print("Formato no adecuado. Ejemplo de tarifas.json:")
+                print('{\n  "parado": 0.02,\n  "movimiento": 0.05\n}')
+                continue # opción de volver a taximetro> y cambiar el json
+
             gestionar_carrera(tarifas)
             mostrar_instrucciones()
 
