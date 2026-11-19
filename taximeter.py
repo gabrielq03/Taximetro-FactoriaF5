@@ -2,12 +2,16 @@ import time
 
 import csv
 import json
+import logging
 
 from datetime import date, datetime
 from pathlib import Path
 
-ARCHIVO_HISTORIAL = Path(__file__).resolve().with_name("historial.csv") # Ruta del csv (en la misma carpeta que el .py)
+# los archivos se encuentran en la misma carpeta
+ARCHIVO_HISTORIAL = Path(__file__).resolve().with_name("historial.csv") # Ruta del csv (lo crea el programa)
 ARCHIVO_TARIFAS = Path(__file__).resolve().with_name("tarifas.json") # Ruta del .json (no lo crea el programa)
+ARCHIVO_LOG = Path(__file__).resolve().with_name("taximetro.log") # Ruta del .log (lo crea el programa)
+
 
 def mostrar_instrucciones():
     """Muestra las opciones del menú principal."""
@@ -18,6 +22,7 @@ def mostrar_instrucciones():
     print("  historial -> ver las carreras del día")
     print("  salir     -> cerrar el programa")
     print()
+
 
 def mostrar_instrucciones_carrera(tarifas):
     """Muestra el estado inicial, las tarifas y los comandos de la carrera."""
@@ -35,13 +40,16 @@ def mostrar_instrucciones_carrera(tarifas):
     print("  finalizar  -> terminar la carrera y mostrar el importe")
     print()
 
+
 def iniciar_carrera():
     """Devuelve el instante de inicio de una carrera."""
     return time.monotonic()
 
+
 def calcular_importe(duracion_segundos, tarifa_por_segundo):
     """Calcula el coste sin redondear los resultados intermedios."""
     return duracion_segundos * tarifa_por_segundo
+
 
 def finalizar_carrera(inicio_carrera, inicio_tramo, tarifa_por_segundo, importe_acumulado):
     """Suma el último tramo y devuelve la duración y el importe totales."""
@@ -51,6 +59,7 @@ def finalizar_carrera(inicio_carrera, inicio_tramo, tarifa_por_segundo, importe_
     importe_tramo = calcular_importe(duracion_tramo, tarifa_por_segundo)
 
     return duracion_segundos, importe_acumulado + importe_tramo
+
 
 def guardar_carrera(duracion_segundos, importe_euros):
     """Guarda la fecha y hora de cierre, la duración y el importe."""
@@ -72,7 +81,9 @@ def guardar_carrera(duracion_segundos, importe_euros):
                 f"{importe_euros:.2f}",
             ])
     except OSError as error:
+        logging.error(f"No se pudo guardar la carrera en historial.csv ({error}).")
         print(f"No se pudo guardar la carrera en el historial ({error}).") # si hay errores
+
 
 def mostrar_historial():
     """Muestra las carreras del día y suma los importes registrados."""
@@ -91,6 +102,7 @@ def mostrar_historial():
         # Si todavía no se ha guardado ninguna carrera, el CSV puede no existir.
         carreras_hoy = []
     except OSError as error:
+        logging.error(f"No se pudo leer historial.csv ({error}).")
         print(f"No se pudo leer el historial ({error}).")
         return
 
@@ -114,6 +126,7 @@ def mostrar_historial():
     print(f"Carreras finalizadas: {len(carreras_hoy)}")
     print(f"Total de caja: {total:.2f} €.")
 
+
 def gestionar_carrera(tarifas):
     """Gestiona una carrera desde su inicio hasta su finalización."""
     # El inicio de la carrera queda fijo. El del tramo cambia con el estado.
@@ -122,6 +135,8 @@ def gestionar_carrera(tarifas):
     estado = "parado"
     importe_acumulado = 0.0
 
+
+    logging.info(f"Carrera iniciada. Estado: {estado}. Tarifa: {tarifas[estado]:.2f} €/segundo.")
     mostrar_instrucciones_carrera(tarifas)
 
     while True:
@@ -139,6 +154,7 @@ def gestionar_carrera(tarifas):
 
                 # El final del tramo anterior es el inicio del nuevo tramo.
                 inicio_tramo = instante_cambio
+                logging.info(f"Cambio de estado: {estado} -> {comando_carrera}. Nueva tarifa: {tarifas[comando_carrera]:.2f} €/segundo.")
                 estado = comando_carrera
 
                 print(f"Estado: {estado}. Tarifa: {tarifas[estado]:.2f} €/segundo.")
@@ -151,6 +167,7 @@ def gestionar_carrera(tarifas):
                 importe_acumulado,
             )
 
+            logging.info(f"Carrera finalizada. Duración: {duracion:.2f} s. Importe: {importe:.2f} €.")
             print(f"Duración: {duracion:.2f} segundos.")
             print(f"Importe total: {importe:.2f} €.")
 
@@ -163,6 +180,14 @@ def gestionar_carrera(tarifas):
 
 
 def main():
+
+    logging.basicConfig(
+        filename=ARCHIVO_LOG,filemode="a",
+        encoding="utf-8",level=logging.INFO,
+        format="%(asctime)s | %(levelname)-5s | %(message)s",datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    logging.info("Taximetro iniciado")
     mostrar_instrucciones()
 
     while True:
@@ -175,10 +200,12 @@ def main():
                     tarifas = json.load(archivo)
 
             except FileNotFoundError:
+                logging.error("Tarifas no especificadas. Falta el fichero tarifas.json.")
                 print("Tarifas no especificadas. Falta el fichero tarifas.json")
                 break # si no hay tarifas salir del programa
 
-            except ValueError:
+            except ValueError as error:
+                logging.error(f"Formato no adecuado en tarifas.json ({error}).")
                 print("Formato no adecuado. Ejemplo de tarifas.json:")
                 print('{\n  "parado": 0.02,\n  "movimiento": 0.05\n}')
                 continue # opción de volver a taximetro> y cambiar el json
@@ -190,6 +217,7 @@ def main():
             print("No hay ninguna carrera activa.")
 
         elif comando == "historial":
+            logging.info("Consulta del historial del día solicitada.")
             mostrar_historial()
 
         elif comando == "salir":
@@ -198,6 +226,8 @@ def main():
 
         else:
             print("Comando no válido. Usa: iniciar, finalizar, historial o salir.")
+
+    logging.info("Taximetro cerrado")
 
 if __name__ == "__main__":
     main()
